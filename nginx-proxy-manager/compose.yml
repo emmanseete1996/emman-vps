@@ -14,13 +14,20 @@ services:
       DB_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DB_POSTGRES_NAME: ${POSTGRES_DB}
     depends_on:
-      - npm-db
+      npm-db:
+        condition: service_healthy
     volumes:
       - web-data:/data
       - ssl-data:/etc/letsencrypt
     networks:
       - default
       - global-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:81/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   npm-db:
     image: postgres:18-alpine
@@ -34,6 +41,12 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
 volumes:
   web-data:
